@@ -52,25 +52,11 @@ public class Server {
 					}
 					userInterface.incomingMessageBox.textArea.setCaretPosition(userInterface.incomingMessageBox.textArea.getDocument().getLength());
 				}
-				userInterface.incomingMessageBox.textArea.append("break!\n");
+
 				close();
 				System.exit(0);
 			} catch(Exception e) {}
 		}
-	}
-
-	public static void main(String[] args) throws Exception {
-		Server s = new Server(args[0]);
-		s.start(50000);
-		s.listen();
-
-		String message;
-		Scanner sc = new Scanner(System.in);
-		s.handshake();
-		Thread messageListener = s.new MessageListenerThread();
-		messageListener.start();
-
-		//used to print server name here
 	}
 
 	public void makeEventListeners() {
@@ -125,8 +111,10 @@ public class Server {
 	}
 
 	public void setupStreams() throws Exception {
+		userInterface.incomingMessageBox.textArea.append("Setting up streams... ");
 		incoming = new BufferedReader(new InputStreamReader(clientConnection.getInputStream()));
 		outgoing = new DataOutputStream(clientConnection.getOutputStream());
+		userInterface.incomingMessageBox.textArea.append(" done!\nConnected!\n\n\n\n");
 	}
 
 	public void send(String message) throws Exception {
@@ -145,29 +133,22 @@ public class Server {
 		String raw_message = "";
 		String[] token = new String[3];
 		generateHash();
+
 		while(true) {
 			while(incoming.ready()) {
 				raw_message = incoming.readLine();
 				token = raw_message.split(":");
 				if(token[0].equals("hash")) {
-					userInterface.incomingMessageBox.textArea.append("sending hash ID...");
 					sendHandshakeMessage("hash:" + serverInfo.hashID);
-					userInterface.incomingMessageBox.textArea.append(" sent!\n");
 					serverInfo.remoteHash = token[1];
 				} else if(token[0].equals("username")) {
-					userInterface.incomingMessageBox.textArea.append("sending username...");
 					sendHandshakeMessage("username:" + serverInfo.username);
-					userInterface.incomingMessageBox.textArea.append(" sent!\n");
 					serverInfo.remoteUsername = token[1];
 				} else if(token[0].equals("ipaddress")) {
-					userInterface.incomingMessageBox.textArea.append("sending local IP address...");
 					sendHandshakeMessage("ipaddress:" + serverConnection.getInetAddress().toString());
-					userInterface.incomingMessageBox.textArea.append(" sent!\n");
 					serverInfo.remoteIP = token[1];
 				} else if(token[0].equals("port")) {
-					userInterface.incomingMessageBox.textArea.append("sending local port number...");
 					sendHandshakeMessage("port:" + Integer.toString(serverConnection.getLocalPort()));
-					userInterface.incomingMessageBox.textArea.append(" sent!\n");
 					serverInfo.remotePort = token[1];
 				} else break;
 			}
@@ -199,5 +180,17 @@ public class Server {
 		serverConnection.close();
 		clientConnection.close();
 		userInterface.incomingMessageBox.textArea.append("Disconnected!\n");
+	}
+
+	public static void main(String[] args) throws Exception {
+		Server s = new Server(args[0]);
+		s.start(50000);
+		s.listen();
+
+		String message;
+		Scanner sc = new Scanner(System.in);
+		s.handshake();
+		Thread messageListener = s.new MessageListenerThread();
+		messageListener.start();
 	}
 }
