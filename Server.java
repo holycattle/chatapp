@@ -50,6 +50,7 @@ public class Server {
 						userInterface.incomingMessageBox.textArea.append("\r" + delimitedMessage[1] + "\n");
 						//this line used to print the server's username
 					}
+					userInterface.incomingMessageBox.textArea.setCaretPosition(userInterface.incomingMessageBox.textArea.getDocument().getLength());
 				}
 				userInterface.incomingMessageBox.textArea.append("break!\n");
 				close();
@@ -102,6 +103,7 @@ public class Server {
 						sendHandshakeMessage("cusername:" + serverInfo.username);
 					} else {
 						userInterface.incomingMessageBox.textArea.append(serverInfo.username + ": " + message + "\n");
+						userInterface.incomingMessageBox.textArea.setCaretPosition(userInterface.incomingMessageBox.textArea.getDocument().getLength()); 
 						send(message);						
 					}
 				}
