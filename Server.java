@@ -10,6 +10,8 @@ import java.security.MessageDigest;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.IOException;
+import java.awt.event.*;
+import javax.swing.event.*;
 
 public class Server {
 	ChatUI userInterface;
@@ -23,6 +25,7 @@ public class Server {
 		serverInfo = new AppInfo(username);
 		userInterface = new ChatUI();
 		userInterface.setVisible(true);
+		makeEventListeners();
 	}
 
 	class MessageListenerThread extends Thread {
@@ -66,31 +69,44 @@ public class Server {
 		Thread messageListener = s.new MessageListenerThread();
 		messageListener.start();
 
-		s.userInterface.incomingMessageBox.textArea.append(s.serverInfo.username + ": ");
-		while(s.clientConnection.isConnected() && s.serverConnection.isBound()) {
-			
-			message = sc.nextLine();
-			while(message.contains("~") || message.length() == 0) {
-				//this line used to print the server's username
-				message = sc.nextLine();
-				if(message == null)
-					break;
-			}
+		//used to print server name here
+	}
 
-			if(message.contains("KThanksBye")) {
-				s.sendHandshakeMessage("disconnect:");
-				s.close();
-				System.exit(0);
-			} else if(message.startsWith("@")) {
-				s.serverInfo.username = message.substring(1);
-				s.userInterface.incomingMessageBox.textArea.append("Username changed to " + s.serverInfo.username);
-				s.sendHandshakeMessage("cusername:" + s.serverInfo.username);
-				//this line used to print the server's username
-			} else {
-				s.send(message);
-				//this line used to print the server's username
+	public void makeEventListeners() {
+		ActionListener SendListener = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					sendMessage();
+				} catch(Exception ex) {}
 			}
-		}
+		};
+		userInterface.sendButton.addActionListener(SendListener);		
+	}
+
+	public void sendMessage() {
+		String message = "";
+		message = userInterface.messageBox.textArea.getText();
+		userInterface.messageBox.textArea.setText("");
+		try {
+			if(message.contains("~") || message.length() == 0) {
+				userInterface.messageBox.textArea.setText("");
+			} else {
+				if(clientConnection.isConnected() && serverConnection.isBound()) {
+					if(message.contains("KThanksBye")) {
+						sendHandshakeMessage("disconnect:");
+						close();
+						System.exit(0);
+					} else if(message.startsWith("@")) {
+						serverInfo.username = message.substring(1);
+						userInterface.incomingMessageBox.textArea.append("Username changed to " + serverInfo.username + "\n");
+						sendHandshakeMessage("cusername:" + serverInfo.username);
+					} else {
+						userInterface.incomingMessageBox.textArea.append(serverInfo.username + ": " + message + "\n");
+						send(message);						
+					}
+				}
+			}
+		} catch(Exception e) {}
 	}
 
 	public void start(int port) throws Exception {
