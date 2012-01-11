@@ -38,14 +38,14 @@ public class Server {
 					if(incomingMessage.startsWith("cusername:")) {
 						serverInfo.remoteUsername = incomingMessage.substring(10);
 						userInterface.incomingMessageBox.textArea.append("Username changed to " + serverInfo.remoteUsername + "\n");
-						userInterface.incomingMessageBox.textArea.append("\n" + serverInfo.username + ": ");
+						//this line used to print the server's username
 					} else if(incomingMessage.contains("disconnect")) {
 						userInterface.incomingMessageBox.textArea.append("\rClient has disconnected.\n");
 						close();
 						System.exit(0);
 					} else {
 						userInterface.incomingMessageBox.textArea.append("\r" + delimitedMessage[1] + "\n");
-						userInterface.incomingMessageBox.textArea.append(serverInfo.username + ": ");
+						//this line used to print the server's username
 					}
 				}
 				userInterface.incomingMessageBox.textArea.append("break!\n");
@@ -71,7 +71,7 @@ public class Server {
 			
 			message = sc.nextLine();
 			while(message.contains("~") || message.length() == 0) {
-				s.userInterface.incomingMessageBox.textArea.append(s.serverInfo.username + ": ");
+				//this line used to print the server's username
 				message = sc.nextLine();
 				if(message == null)
 					break;
@@ -85,10 +85,10 @@ public class Server {
 				s.serverInfo.username = message.substring(1);
 				s.userInterface.incomingMessageBox.textArea.append("Username changed to " + s.serverInfo.username);
 				s.sendHandshakeMessage("cusername:" + s.serverInfo.username);
-				s.userInterface.incomingMessageBox.textArea.append(s.serverInfo.username + ": ");
+				//this line used to print the server's username
 			} else {
 				s.send(message);
-				s.userInterface.incomingMessageBox.textArea.append(s.serverInfo.username + ": ");
+				//this line used to print the server's username
 			}
 		}
 	}
@@ -130,7 +130,6 @@ public class Server {
 		while(true) {
 			while(incoming.ready()) {
 				raw_message = incoming.readLine();
-				userInterface.incomingMessageBox.textArea.append("client " + raw_message);
 				token = raw_message.split(":");
 				if(token[0].equals("hash")) {
 					userInterface.incomingMessageBox.textArea.append("sending hash ID...");
