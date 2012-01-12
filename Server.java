@@ -25,8 +25,11 @@ public class Server {
 		serverConnection = new ServerSocket(port);
 	}
 
-	public void listen() throws Exception {		
-		clientConnection = serverConnection.accept();
+	public void listen() throws Exception {
+		System.out.print("Waiting for a client... ");
+		clientInstance client = new clientInstance(username, serverConnection, serverConnection.accept());
+		client.start();
+		System.out.println("connected to a client!");
 	}
 
 	public static void main(String[] args) throws Exception {

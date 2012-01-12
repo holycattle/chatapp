@@ -13,23 +13,37 @@ import java.io.IOException;
 import java.awt.event.*;
 import javax.swing.event.*;
 
-public class serverClientInstance {
+public class clientInstance extends Thread {
 	ChatUI userInterface;
+	ServerSocket serverConnection;
 	Socket clientConnection;
 	BufferedReader incoming;
 	DataOutputStream outgoing;
 	AppInfo serverInfo;
 
-	public serverClientInstance(Socket clientConnection) {
+	public clientInstance(String username, ServerSocket serverConnection, Socket clientConnection) {
 		this.clientConnection = clientConnection;
-		userInterface = new ChatUI();
-		userInterface.setVisible(true);
-		makeEventListeners();
+		this.serverConnection = serverConnection;
+		serverInfo = new AppInfo(username);
+	}
+
+	public void run() {
+		try {
+			userInterface = new ChatUI();
+			makeEventListeners();
+			userInterface.setVisible(true);
+			
+		} catch(Exception e) {}
+		(new MessageListenerThread()).start();
 	}
 
 	class MessageListenerThread extends Thread {
 		public void run() {
 			try {
+				generateHash();			
+				setupStreams();
+				handshake();
+				System.out.println("done setting up");
 				while(true) {
 					String incomingMessage = incoming.readLine();
 					if(incomingMessage == null) {
@@ -96,43 +110,59 @@ public class serverClientInstance {
 	}
 
 	public void handshake() throws Exception {
+		System.out.println("handshake");
 		String raw_message = "";
 		String[] token = new String[3];
-		generateHash();
-
+		
+		userInterface.incomingMessageBox.textArea.append("Getting info from client... ");
+		
 		while(true) {
+			System.out.println(raw_message);
 			while(incoming.ready()) {
 				raw_message = incoming.readLine();
+				System.out.println(raw_message);
 				token = raw_message.split(":");
+				
 				if(token[0].equals("hash")) {
+					System.out.println("hash token received");
 					sendHandshakeMessage("hash:" + serverInfo.hashID);
+					System.out.println("hash token sent");
 					serverInfo.remoteHash = token[1];
 				} else if(token[0].equals("username")) {
+					System.out.println("username token received");
 					sendHandshakeMessage("username:" + serverInfo.username);
+					System.out.println("username token sent");
 					serverInfo.remoteUsername = token[1];
 				} else if(token[0].equals("ipaddress")) {
+					System.out.println("ipaddress token received");
 					sendHandshakeMessage("ipaddress:" + serverConnection.getInetAddress().toString());
+					System.out.println("ipaddress token sent");
 					serverInfo.remoteIP = token[1];
 				} else if(token[0].equals("port")) {
+					System.out.println("port token received");
 					sendHandshakeMessage("port:" + Integer.toString(serverConnection.getLocalPort()));
+					System.out.println("port token sent");
 					serverInfo.remotePort = token[1];
 				} else break;
 			}
-			
+			System.out.println("waiting for message from client again...");
 			if(serverInfo.remoteUsername.length() != 0 && serverInfo.remoteIP.length() != 0 && serverInfo.remoteHash.length() != 0) {
+				System.out.println("handshake not completed");
 				break;
 			}
 		}
+		userInterface.incomingMessageBox.textArea.append("Done!\n");
 	}
 
 	public void setupStreams() throws Exception {
 		userInterface.incomingMessageBox.textArea.append("Setting up streams... ");
 		incoming = new BufferedReader(new InputStreamReader(clientConnection.getInputStream()));
 		outgoing = new DataOutputStream(clientConnection.getOutputStream());
-		userInterface.incomingMessageBox.textArea.append(" done!\nConnected!\n\n\n\n");
+		userInterface.incomingMessageBox.textArea.append(" done!\n");
 	}
 
 	public void generateHash() throws Exception {
+		System.out.print("Generating hash... ");
 		SecureRandom rnd = new SecureRandom();
 		String rndString = new BigInteger(130, rnd).toString(32);
 		MessageDigest md = MessageDigest.getInstance("MD5");
@@ -144,16 +174,20 @@ public class serverClientInstance {
 		while(hashText.length() < 32) {
 			hashText = "0" + hashText;
 		}
-
 		serverInfo.hashID = hashText;
+		System.out.println("hash done!");
 	}
 
 	public void send(String message) throws Exception {
+		System.out.print("sending message... ");
 		outgoing.writeBytes("message:" + serverInfo.username + ": " + message + "\n");
+		System.out.println("message sent!");
 	}
 
 	public void sendHandshakeMessage(String message) throws Exception {
+		System.out.print("shaking hand... ");
 		outgoing.writeBytes(message + "\n");
+		System.out.println("handshake sent!");
 	}
 
 	public String readLine() throws Exception {
